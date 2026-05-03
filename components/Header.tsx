@@ -1,19 +1,25 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { signOut } from "@/app/actions";
 
 export async function Header() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
 
+  let user = null;
   let canAdd = false;
-  if (user?.email) {
-    const { data } = await supabase
-      .from("allowed_authors")
-      .select("email")
-      .ilike("email", user.email)
-      .maybeSingle();
-    canAdd = !!data;
+
+  if (supabase) {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+    if (user?.email) {
+      const { data: allowed } = await supabase
+        .from("allowed_authors")
+        .select("email")
+        .ilike("email", user.email)
+        .maybeSingle();
+      canAdd = !!allowed;
+    }
   }
 
   return (
@@ -30,14 +36,16 @@ export async function Header() {
               New prompt
             </Link>
           )}
-          {user ? (
-            <form action={signOut}>
-              <button className="btn-ghost text-[rgb(var(--muted))]" title={user.email ?? ""}>
-                Sign out
-              </button>
-            </form>
-          ) : (
-            <Link href="/login" className="btn-outline">Sign in</Link>
+          {isSupabaseConfigured && (
+            user ? (
+              <form action={signOut}>
+                <button className="btn-ghost text-[rgb(var(--muted))]" title={user.email ?? ""}>
+                  Sign out
+                </button>
+              </form>
+            ) : (
+              <Link href="/login" className="btn-outline">Sign in</Link>
+            )
           )}
         </nav>
       </div>

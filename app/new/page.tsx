@@ -1,16 +1,19 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { NewPromptForm } from "./NewPromptForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewPromptPage() {
+  if (!isSupabaseConfigured) redirect("/");
+
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase!.auth.getUser();
   if (!user?.email) redirect("/login");
 
-  const { data: allowed } = await supabase
+  const { data: allowed } = await supabase!
     .from("allowed_authors")
     .select("email")
     .ilike("email", user.email)
@@ -31,8 +34,7 @@ export default async function NewPromptPage() {
     );
   }
 
-  // Suggest existing tags for autocomplete.
-  const { data: existing } = await supabase.from("prompts").select("tags");
+  const { data: existing } = await supabase!.from("prompts").select("tags");
   const tagSuggestions = Array.from(
     new Set((existing ?? []).flatMap((r: { tags: string[] }) => r.tags))
   ).sort();

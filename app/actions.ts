@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function signOut() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  if (supabase) await supabase.auth.signOut();
   redirect("/");
 }
 
@@ -23,6 +23,8 @@ function parseTags(raw: string): string[] {
 
 export async function createPrompt(formData: FormData) {
   const supabase = await createClient();
+  if (!supabase) return { error: "Database not configured." };
+
   const { data: { user } } = await supabase.auth.getUser();
   if (!user?.email) redirect("/login");
 
@@ -30,9 +32,7 @@ export async function createPrompt(formData: FormData) {
   const body = String(formData.get("body") ?? "").trim();
   const tags = parseTags(String(formData.get("tags") ?? ""));
 
-  if (!title || !body) {
-    return { error: "Title and body are required." };
-  }
+  if (!title || !body) return { error: "Title and body are required." };
 
   const { error } = await supabase.from("prompts").insert({
     title,
@@ -50,6 +50,7 @@ export async function createPrompt(formData: FormData) {
 
 export async function deletePrompt(id: string) {
   const supabase = await createClient();
+  if (!supabase) return { error: "Database not configured." };
   const { error } = await supabase.from("prompts").delete().eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/");

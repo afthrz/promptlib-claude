@@ -15,6 +15,7 @@ export function LoginForm() {
       : process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
   const signInGoogle = async () => {
+    if (!supabase) return;
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -25,6 +26,7 @@ export function LoginForm() {
 
   const sendMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!supabase) return;
     setStatus("sending");
     setError(null);
     const { error } = await supabase.auth.signInWithOtp({

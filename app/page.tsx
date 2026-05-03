@@ -20,15 +20,21 @@ export default async function Home({
   searchParams: Promise<{ q?: string; tag?: string }>;
 }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  const { data: prompts } = await supabase
-    .from("prompts")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  const all = (prompts ?? []) as Prompt[];
   const sp = await searchParams;
+
+  let all: Prompt[] = [];
+  let userId: string | undefined;
+
+  if (supabase) {
+    const { data: { user } } = await supabase.auth.getUser();
+    userId = user?.id;
+    const { data } = await supabase
+      .from("prompts")
+      .select("*")
+      .order("created_at", { ascending: false });
+    all = (data ?? []) as Prompt[];
+  }
+
   const q = (sp.q ?? "").toLowerCase().trim();
   const tag = (sp.tag ?? "").toLowerCase().trim();
 
@@ -63,7 +69,7 @@ export default async function Home({
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2">
           {filtered.map((p) => (
-            <PromptCard key={p.id} prompt={p} ownedByMe={user?.id === p.author_id} />
+            <PromptCard key={p.id} prompt={p} ownedByMe={userId === p.author_id} />
           ))}
         </ul>
       )}
